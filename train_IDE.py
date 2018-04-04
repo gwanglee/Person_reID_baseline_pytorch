@@ -139,7 +139,7 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
         for phase in ['train', 'val']:
             if phase == 'train':
                 scheduler.step()
-                model.eval()  # Set model to training mode
+                model.eval()  # Fix BN of ResNet50
             else:
                 model.train(False)  # Set model to evaluate mode
 
