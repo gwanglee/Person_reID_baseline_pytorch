@@ -71,7 +71,7 @@ data_transforms = transforms.Compose([
 data_dir = test_dir
 image_datasets = {x: datasets.ImageFolder( os.path.join(data_dir,x) ,data_transforms) for x in ['gallery','query']}
 dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=opt.batchsize,
-                                             shuffle=False, num_workers=4) for x in ['gallery','query']}
+                                             shuffle=False, num_workers=0) for x in ['gallery','query']}
 
 class_names = image_datasets['query'].classes
 use_gpu = torch.cuda.is_available()
@@ -122,6 +122,14 @@ def extract_feature(model,dataloaders):
         ff = ff.div(fnorm.expand_as(ff))
         features = torch.cat((features,ff), 0)
     return features
+	
+def Warm_up(model,dataloaders):
+    count = 0
+    for data in dataloaders:
+        img, _ = data
+        input_img = Variable(img.cuda())
+        outputs = model(input_img)
+    return model
 
 def get_id(img_path):
     camera_id = []
@@ -155,6 +163,15 @@ model = load_network(model_structure)
 # Remove the final fc layer and classifier layer
 model.model.fc = nn.Sequential()
 model.classifier = nn.Sequential()
+
+
+# Warm UP
+model = model.train()
+if use_gpu:
+    model = model.cuda()
+		
+model = Warm_up(model,dataloaders['gallery', 'query'])
+#model = Warm_up(model,dataloaders['query'])
 
 # Change to test mode
 model = model.eval()
