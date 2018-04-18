@@ -22,9 +22,9 @@ from model import ft_net, ft_net_dense
 parser = argparse.ArgumentParser(description='Training')
 parser.add_argument('--gpu_ids',default='2', type=str,help='gpu_ids: e.g. 0  0,1,2  0,2')
 parser.add_argument('--which_epoch',default='last', type=str, help='0,1,2,3...or last')
-parser.add_argument('--test_dir',default='/home/zzheng/Downloads/Market/pytorch',type=str, help='./test_data')
+parser.add_argument('--test_dir',default='./market/pytorch',type=str, help='./test_data')
 parser.add_argument('--name', default='ft_ResNet50', type=str, help='save model path')
-parser.add_argument('--batchsize', default=64, type=int, help='batchsize')
+parser.add_argument('--batchsize', default=32, type=int, help='batchsize')
 parser.add_argument('--use_dense', action='store_true', help='use densenet121' )
 
 opt = parser.parse_args()
@@ -52,7 +52,7 @@ if len(gpu_ids)>0:
 # data.
 #
 data_transforms = transforms.Compose([
-        transforms.Resize((288,144), interpolation=3),
+        transforms.Resize((256,128), interpolation=3),
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 ############### Ten Crop        
@@ -122,14 +122,6 @@ def extract_feature(model,dataloaders):
         ff = ff.div(fnorm.expand_as(ff))
         features = torch.cat((features,ff), 0)
     return features
-	
-def Warm_up(model,dataloaders):
-    count = 0
-    for data in dataloaders:
-        img, _ = data
-        input_img = Variable(img.cuda())
-        outputs = model(input_img)
-    return model
 
 def get_id(img_path):
     camera_id = []
@@ -163,15 +155,6 @@ model = load_network(model_structure)
 # Remove the final fc layer and classifier layer
 model.model.fc = nn.Sequential()
 model.classifier = nn.Sequential()
-
-
-# Warm UP
-model = model.train()
-if use_gpu:
-    model = model.cuda()
-		
-model = Warm_up(model,dataloaders['gallery', 'query'])
-#model = Warm_up(model,dataloaders['query'])
 
 # Change to test mode
 model = model.eval()
